@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DATA>
+    <Sms>
+        <Name>wlc</Name>
+        <Number>18725658147</Number>
+        <Content>短信测试1</Content>
+        <Time>2012-07-25 23:54:10</Time>
+    </Sms>
+    <Sms>
+        <Name>rt</Name>
+        <Number>13555555555</Number>
+        <Content>短信测试2</Content>
+        <Time>2012-07-26 00:21:24</Time>
+    </Sms>
+    <Sms>
+        <Name>wzg</Name>
+        <Number>18656765434</Number>
+        <Content>短信测试3</Content>
+        <Time>2012-07-26 00:22:03</Time>
+        <Type>0</Type>
+        <Read>1</Read>
+    </Sms>
+</DATA>
+
