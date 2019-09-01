@@ -16,13 +16,13 @@ videoPlayApp::videoPlayApp(QWidget *parent)
 	player(NULL),
 	playerlist(NULL),
 	videoWidget(NULL),
-	videoPlayWidget(NULL),
 	videoName(NULL)
 {
 	//ui.setupUi(this);
 	initialize();
 }
 
+//页面布局初始化
 void videoPlayApp::initialize()
 {
 	
@@ -39,11 +39,7 @@ void videoPlayApp::initialize()
 	h1Layout->addItem(new QSpacerItem(1, QSizePolicy::Expanding));
 
 	videoWidget = new QVideoWidget;
-	//videoPlayWidget = new QWidget;
-	//videoPlayWidget->setObjectName("videoPlayWidget");
-	//videoPlayWidget->setStyleSheet(QString("QWidget#videoPlayWidget{min-height:500;max-height:500;}"));
-	videoWidget->setFixedSize(QSize(800, 500));
-	videoWidget->setSizePolicy(QSizePolicy::Policy::Preferred,QSizePolicy::Policy::Expanding);
+	videoWidget->setSizePolicy(QSizePolicy::Policy::Expanding,QSizePolicy::Policy::Expanding);
 
 	QPushButton* openFile = new QPushButton("open");
 	openFile->setFixedSize(QSize(150, 50));
@@ -78,32 +74,35 @@ void videoPlayApp::initialize()
 	//vLayout->setSpacing(0);
 	this->setLayout(vLayout);
 
-
 	player = new QMediaPlayer(this);
 	playerlist = new QMediaPlaylist(this);
-
 }
 
 
 bool videoPlayApp::openFileSlots()
 {
-	if (playState != PlayState::STOP)
+	//正在播放时先关闭播放器
+	if (playState == PlayState::PLAY)
 	{
-		player->stop();
-		playState = STOP;
+		player->pause();
+		playState = PAUSE;
 	}
-	QStringList filePaths = QFileDialog::getOpenFileNames(NULL,CHS("导入视频文件"),"./","video/mp3 (*.*)");
+
+	//获得播放文件完整路径
+	QStringList filePaths = QFileDialog::getOpenFileNames(NULL,CHS("请选择导入视频文件"),"./","video/mp3 (*.*)");
 	for (auto &path : filePaths)
 	{
 		QString videoName = "";
 		int loc = path.lastIndexOf("/");
 		videoName = path.mid(loc+1);
+		//判别文件是否已经存在
 		if (videoNameAndPath.find(videoName) == videoNameAndPath.end())
 		{
 			videoNameAndPath[videoName] = path;
 			videoPathVector.push_back(path);
 		}
 	}
+	//路径空返回
 	if (filePaths.isEmpty())
 	{
 		return false;
@@ -111,55 +110,122 @@ bool videoPlayApp::openFileSlots()
 	QMessageBox::information(this, "", CHS("文件导入成功!"), QMessageBox::Yes);
 	return true;
 }
-
+//播放视频
 void videoPlayApp::playSlots()
 {
+	//第一次点击
 	if (videoPathVector.isEmpty())
 	{
 		QMessageBox::information(this, "", CHS("请先导入播放文件!"), QMessageBox::Yes);
 		return;
 	}
-	if (playState == PlayState::PLAY)
+	////正在播放时点击切换为暂停
+	//if (playState == PlayState::PLAY)
+	//{
+	//	player->pause();
+	//	playState = PAUSE;
+	//	return;
+	//}
+	////切换为播放
+	//else if (playState == PlayState::PAUSE)
+	//{
+	//	player->play();
+	//	playState = PLAY;
+	//	return;
+	//}
+	//else
+	//{// stop状态
+	//	//先清空播放列表，重新导入
+	//	playerlist->clear();
+	//	for (auto& filePath : videoPathVector)
+	//	{
+	//		//添加播放资源
+	//		playerlist->addMedia(QUrl::fromLocalFile(filePath));
+	//	}
+	//	//设置当前播放顺序
+	//	playerlist->setCurrentIndex(currentIndex);
+	//	//显示当前播放信息
+	//	//int currentIndex = playerlist->currentIndex();
+	//	if (currentIndex < videoPathVector.size())
+	//	{
+	//		QString currentFilePath = videoPathVector[currentIndex];
+	//		int loc = currentFilePath.lastIndexOf("/");
+	//		QString tmpVideoName = currentFilePath.mid(loc + 1);
+	//		videoName->setText(CHS("正在播放-") + tmpVideoName);
+	//	}
+	//	//设置播放模式
+	//	playerlist->setPlaybackMode(QMediaPlaylist::PlaybackMode::CurrentItemInLoop);
+	//	//设置播放列表
+	//	player->setPlaylist(playerlist);
+	//	//设置视频显示窗口
+	//	player->setVideoOutput(videoWidget);
+	//	//显示视频
+	//	videoWidget->show();
+	//	//播放音频
+	//	player->play();
+	//	playState = PLAY;
+	//}
+
+	switch (playState)
 	{
-		player->pause();
-		playState = PAUSE;
-		return;
-	}
-	else if (playState == PlayState::PAUSE)
-	{
-		player->play();
-		playState = PLAY;
-		return;
-	}
-	else
-	{
-		playerlist->clear();
-		for (auto& filePath : videoPathVector)
+		case(PAUSE):
 		{
-			playerlist->addMedia(QUrl::fromLocalFile(filePath));
+			playState = PLAY;
+			player->play();
+			break;
 		}
-		
-		playerlist->setCurrentIndex(0);
-		int currentIndex = playerlist->currentIndex();
-		if (currentIndex < videoPathVector.size())
+		case(PLAY):
 		{
-			QString currentFilePath = videoPathVector[currentIndex];
-			int loc = currentFilePath.lastIndexOf("/");
-			QString tmpVideoName = currentFilePath.mid(loc + 1);
-			videoName->setText(CHS("正在播放-") + tmpVideoName);
+			playState = PAUSE;
+			player->pause();
+			break;
 		}
-		playerlist->setPlaybackMode(QMediaPlaylist::PlaybackMode::CurrentItemInLoop);
-		player->setPlaylist(playerlist);
-		player->setVideoOutput(videoWidget);
-		videoWidget->show();
-		player->play();
-		playState = PLAY;
+		case(STOP):
+		{
+			initVideoPlayInfo();
+			break;
+		}
+		default:
+			break;
 	}
 }
 
+
+void videoPlayApp::initVideoPlayInfo()
+{
+	//先清空播放列表，重新导入
+	//playerlist->clear();
+	for (auto& filePath : videoPathVector)
+	{
+		//添加播放资源
+		playerlist->addMedia(QUrl::fromLocalFile(filePath));
+	}
+	//显示当前播放信息
+	playerlist->setCurrentIndex(0);
+
+	int currentIndex = playerlist->currentIndex();
+	if (currentIndex < videoPathVector.size())
+	{
+		QString currentFilePath = videoPathVector[currentIndex];
+		int loc = currentFilePath.lastIndexOf("/");
+		QString tmpVideoName = currentFilePath.mid(loc + 1);
+		videoName->setText(CHS("正在播放-") + tmpVideoName);
+	}
+	//设置播放模式
+	playerlist->setPlaybackMode(QMediaPlaylist::PlaybackMode::CurrentItemInLoop);
+	//设置播放列表
+	player->setPlaylist(playerlist);
+	//设置视频显示窗口
+	player->setVideoOutput(videoWidget);
+	//显示视频
+	videoWidget->show();
+	//播放音频
+	player->play();
+	playState = PLAY;
+}
+//退出播放器
 bool videoPlayApp::exitSlots()
 {
-
 	QMessageBox::StandardButton btn=QMessageBox::information(this, "", CHS("是否确认退出？"), QMessageBox::Yes | QMessageBox::No);
 	if (btn == QMessageBox::Yes)
 	{	
@@ -172,25 +238,35 @@ bool videoPlayApp::exitSlots()
 	return false;
 }
 
+//播放下一个资源
 void videoPlayApp::nextSlots()
 {
+	if (playerlist->isEmpty())
+	{
+		QMessageBox::information(this, "", CHS("请导入播放文件!"), QMessageBox::Yes);
+		return;
+	}
 	player->stop();
 	playState = STOP;
+	//确保当前已经导入资源文件
 	int totalMediaNumber = playerlist->mediaCount();
-	int nextIndex = playerlist->nextIndex();
-	if (nextIndex >= totalMediaNumber - 1)
+	int currentIndex = playerlist->currentIndex();
+	int nextIndex;
+	//判别是否最后一个资源
+	if (currentIndex >= totalMediaNumber - 1)
 	{
-		playerlist->setCurrentIndex(0);
+		nextIndex = 0;
+		playerlist->setCurrentIndex(nextIndex);
 	}
 	else
 	{
+		nextIndex = currentIndex + 1;
 		playerlist->setCurrentIndex(nextIndex);
 	}
 	//更新video名称
-	int currentIndex = playerlist->currentIndex();
-	if (currentIndex < videoPathVector.size())
+	if (nextIndex < videoPathVector.size())
 	{
-		QString currentFilePath = videoPathVector[currentIndex];
+		QString currentFilePath = videoPathVector[nextIndex];
 		int loc = currentFilePath.lastIndexOf("/");
 		QString tmpVideoName = currentFilePath.mid(loc + 1);
 		videoName->setText(CHS("正在播放-") + tmpVideoName);
